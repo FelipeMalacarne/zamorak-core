@@ -21,16 +21,16 @@ services:
       placement:
         constraints:
           - node.role==manager
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.dashboard.entrypoints=web,websecure"
-      - "traefik.http.routers.dashboard.rule=Host(`traefik.felipemalacarne.com.br`)"
-      - "traefik.http.routers.dashboard.service=api@internal"
-      - "traefik.http.routers.dashboard.tls=true"
-      - "traefik.http.routers.dashboard.tls.certresolver=cloudflare"
-      - "traefik.http.routers.dashboard.middlewares=auth"
-      - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$jTI83pWT$$Se2q7kXq/OK6vRSrsqn/j0"
-      - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.dashboard.entrypoints=web,websecure"
+        - "traefik.http.routers.dashboard.rule=Host(`traefik.felipemalacarne.com.br`)"
+        - "traefik.http.routers.dashboard.service=api@internal"
+        - "traefik.http.routers.dashboard.tls=true"
+        - "traefik.http.routers.dashboard.tls.certresolver=cloudflare"
+        - "traefik.http.routers.dashboard.middlewares=auth"
+        - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$jTI83pWT$$Se2q7kXq/OK6vRSrsqn/j0"
+        - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
 
   agent:
     image: portainer/agent:lts
