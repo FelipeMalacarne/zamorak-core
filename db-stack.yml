@@ -10,7 +10,7 @@ services:
         constraints: [node.role == manager]
       labels:
         - "traefik.enable=true"
-        - "traefik.tcp.routers.postgres.rule=HostSNI(*)"
+        - "traefik.tcp.routers.postgres.rule=HostSNI(`*`)"
         - "traefik.tcp.routers.postgres.entrypoints=pgsql"
         - "traefik.tcp.services.postgres.loadbalancer.server.port=5432"
     environment:
