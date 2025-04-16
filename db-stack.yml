@@ -1,0 +1,33 @@
+version: "3.3"
+services:
+  postgres:
+    image: postgres:17
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints: [node.role == manager]
+    environment:
+      - POSTGRES_DB=test_db
+      - POSTGRES_USER=test_user
+      - POSTGRES_PASSWORD=test_pass
+    privileged: true
+    volumes:
+      - type: volume
+        source: postgres-data
+        target: /var/lib/postgresql/data
+    networks:
+      - public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.postgres.rule=HostSNI(*)"
+      - "traefik.tcp.routers.postgres.entrypoints=pgsql"
+      - "traefik.tcp.services.postgres.loadbalancer.server.port=5432"
+
+volumes:
+  postgres-data:
+
+networks:
+  public:
+    external: true
