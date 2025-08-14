@@ -80,9 +80,9 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
-    environment:
-      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate run --token-file /run/secrets/cloudflare_tunnel_token
+    secrets:
+      - cloudflare_tunnel_token
     networks:
       - public
     deploy:
@@ -102,4 +102,8 @@ networks:
   public:
     external: true
   agent_network:
+    external: true
+
+secrets:
+  cloudflare_tunnel_token:
     external: true
