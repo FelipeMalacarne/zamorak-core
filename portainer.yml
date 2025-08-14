@@ -31,6 +31,8 @@ services:
     command: tunnel --no-autoupdate run --token-file /run/secrets/portainer_tunnel_token
     secrets:
       - portainer_tunnel_token
+    networks:
+      - agent_network
     deploy:
       mode: replicated
       replicas: 1
@@ -39,7 +41,7 @@ services:
         delay: 5s
         max_attempts: 3
     depends_on:
-      - traefik
+      - portainer
 
 volumes:
   portainer_data:

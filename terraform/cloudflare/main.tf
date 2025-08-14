@@ -42,7 +42,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "portainer_tunnel_con
   config     = {
     ingress   = [
       {
-        hostname = "*.${var.zone}"
+        hostname = "portainer.${var.zone}"
         service  = "http://portainer:9000"
       },
       {
