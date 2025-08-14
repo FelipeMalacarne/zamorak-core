@@ -3,6 +3,16 @@ global:
   sendAnonymousUsage: false
 log:
   level: DEBUG
+accessLog:
+  format: json
+  fields:
+    defaultMode: keep
+    names:
+      "ClientUsername": drop
+    headers:
+      defaultMode: keep
+      names:
+        "User-Agent": redact
 api:
   dashboard: true
   insecure: true
@@ -16,9 +26,6 @@ entryPoints:
     #       scheme: https
   websecure:
     address: ":443"
-    http:
-      tls:
-        certResolver: cloudflare
   pgsql:
     address: ":5432"
 providers:
