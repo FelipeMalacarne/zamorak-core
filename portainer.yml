@@ -1,0 +1,53 @@
+services:
+  portainer:
+    image: portainer/portainer-ee:lts
+    command: -H tcp://tasks.agent:9001 --tlsskipverify
+    volumes:
+      - portainer_data:/data
+    networks:
+      - agent_network
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+
+  agent:
+    image: portainer/agent:lts
+    environment:
+      AGENT_CLUSTER_ADDR: tasks.agent
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+    networks:
+      - agent_network
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.platform.os == linux]
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token-file /run/secrets/cloudflare_tunnel_token
+    secrets:
+      - cloudflare_tunnel_token
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    depends_on:
+      - traefik
+
+volumes:
+  portainer_data:
+
+networks:
+  agent_network:
+    external: true
+
+secrets:
+  cloudflare_tunnel_token:
+    external: true
