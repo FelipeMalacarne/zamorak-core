@@ -65,21 +65,38 @@ services:
       placement:
         constraints: [node.role == manager]
       labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.portainer.rule=Host(`portainer.felipemalacarne.com.br`)"
-      - "traefik.http.routers.portainer.entrypoints=web,websecure"
-      - "traefik.http.routers.portainer.tls=true"
-      - "traefik.http.routers.portainer.tls.certresolver=cloudflare"
-      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
-      - "traefik.http.routers.portainer.service=portainer"
-      # Edge
-      - "traefik.http.routers.edge.rule=Host(`edge.felipemalacarne.com.br`)"
-      - "traefik.http.routers.edge.entrypoints=web,websecure"
-      - "traefik.http.services.edge.loadbalancer.server.port=8000"
-      - "traefik.http.routers.edge.service=edge"
+        - "traefik.enable=true"
+        - "traefik.http.routers.portainer.rule=Host(`portainer.felipemalacarne.com.br`)"
+        - "traefik.http.routers.portainer.entrypoints=web,websecure"
+        - "traefik.http.routers.portainer.tls=true"
+        - "traefik.http.routers.portainer.tls.certresolver=cloudflare"
+        - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+        - "traefik.http.routers.portainer.service=portainer"
+        # Edge
+        - "traefik.http.routers.edge.rule=Host(`edge.felipemalacarne.com.br`)"
+        - "traefik.http.routers.edge.entrypoints=web,websecure"
+        - "traefik.http.services.edge.loadbalancer.server.port=8000"
+        - "traefik.http.routers.edge.service=edge"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - public
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    depends_on:
+      - traefik
 
 volumes:
-   portainer_data:
+  portainer_data:
 
 networks:
   public:

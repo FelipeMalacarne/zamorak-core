@@ -21,15 +21,3 @@ module "cloudflare" {
   zone_id    = var.cloudflare_zone_id
   zone       = var.cloudflare_zone
 }
-
-# Outputs
-output "tunnel_token" {
-  description = "Cloudflare Tunnel Token"
-  value       = module.cloudflare.tunnel_token
-  sensitive   = true
-}
-
-output "tunnel_cname" {
-  description = "Cloudflare Tunnel CNAME"
-  value       = module.cloudflare.tunnel_cname
-}
