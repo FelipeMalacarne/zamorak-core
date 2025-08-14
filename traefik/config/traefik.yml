@@ -16,7 +16,10 @@ entryPoints:
           scheme: https
   websecure:
     address: ":443"
-  pgsql: 
+    http:
+      tls:
+        certResolver: cloudflare
+  pgsql:
     address: ":5432"
 providers:
   swarm:

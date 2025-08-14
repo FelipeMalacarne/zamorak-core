@@ -10,10 +10,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/config/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./data/certs/:/var/traefik/certs/:rw
-    env_file:
-      - .env
-    # environment:
-    #   - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+    secrets:
+      - cf_api_token
+    environment:
+      - CLOUDFLARE_DNS_API_TOKEN_FILE=/run/secrets/cf_api_token
     restart: unless-stopped
     networks:
       - public
@@ -105,5 +105,7 @@ networks:
     external: true
 
 secrets:
+  cf_api_token:
+    external: true
   cloudflare_tunnel_token:
     external: true
