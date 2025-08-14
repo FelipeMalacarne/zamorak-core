@@ -28,9 +28,9 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate run --token-file /run/secrets/cloudflare_tunnel_token
+    command: tunnel --no-autoupdate run --token-file /run/secrets/portainer_tunnel_token
     secrets:
-      - cloudflare_tunnel_token
+      - portainer_tunnel_token
     deploy:
       mode: replicated
       replicas: 1
@@ -49,5 +49,5 @@ networks:
     external: true
 
 secrets:
-  cloudflare_tunnel_token:
+  portainer_tunnel_token:
     external: true
