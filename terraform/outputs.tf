@@ -1,7 +1,7 @@
 output "tunnel_token" {
   description = "Cloudflare Tunnel Token"
   value       = module.cloudflare.tunnel_token
-#   sensitive   = true
+  sensitive   = true
 }
 
 output "tunnel_cname" {
