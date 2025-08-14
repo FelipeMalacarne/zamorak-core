@@ -72,6 +72,10 @@ services:
         - "traefik.http.routers.portainer.tls.certresolver=cloudflare"
         - "traefik.http.services.portainer.loadbalancer.server.port=9000"
         - "traefik.http.routers.portainer.service=portainer"
+        # HTTP-only router for tunnel traffic
+        - "traefik.http.routers.portainer-http.rule=Host(`portainer.felipemalacarne.com.br`)"
+        - "traefik.http.routers.portainer-http.entrypoints=web"
+        - "traefik.http.routers.portainer-http.service=portainer"
         # Edge
         - "traefik.http.routers.edge.rule=Host(`edge.felipemalacarne.com.br`)"
         - "traefik.http.routers.edge.entrypoints=web,websecure"
