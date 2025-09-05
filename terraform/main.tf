@@ -20,4 +20,5 @@ module "cloudflare" {
   account_id = var.cloudflare_account_id
   zone_id    = var.cloudflare_zone_id
   zone       = var.cloudflare_zone
+  traefik_host = var.vm_host
 }

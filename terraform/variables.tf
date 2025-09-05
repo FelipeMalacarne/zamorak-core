@@ -30,3 +30,8 @@ variable "cloudflare_zone" {
   description = "Domain used to expose the zamorak VM instance to the Internet"
   type        = string
 }
+
+variable "vm_host" {
+  description = "Host for the virtual machine"
+  type = string
+}

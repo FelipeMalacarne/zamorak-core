@@ -9,3 +9,5 @@ cloudflare_api_token  = "your_api_token"
 cloudflare_account_id = "your_account_id"
 cloudflare_zone_id    = "zone_id"
 cloudflare_zone       = "felipemalacarne.com.br"
+
+vm_host = "0.0.0.0"

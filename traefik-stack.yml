@@ -1,0 +1,67 @@
+services:
+  traefik:
+    image: "traefik:v3.3"
+    command:
+      - "--global.checknewversion=false"
+      - "--global.sendanonymoususage=false"
+      - "--log.level=DEBUG"
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.websecure.http.tls.certresolver=cloudflare"
+      - "--entrypoints.pgsql.address=:5432"
+      - "--providers.swarm.endpoint=unix:///var/run/docker.sock"
+      - "--providers.swarm.exposedbydefault=false"
+      - "--providers.swarm.network=public"
+      - "--certificatesresolvers.cloudflare.acme.email=felipemalacarne012@gmail.com"
+      - "--certificatesresolvers.cloudflare.acme.storage=/var/traefik/certs/cloudflare-acme.json"
+      - "--certificatesresolvers.cloudflare.acme.caserver=https://acme-v02.api.letsencrypt.org/directory"
+      - "--certificatesresolvers.cloudflare.acme.keytype=EC256"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge.resolvers=1.1.1.1:53"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge.resolvers=8.8.8.8:53"
+    ports:
+      - "443:443"
+      - "80:80"
+      - "5432:5432"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_certs:/var/traefik/certs/:rw
+    secrets:
+      - cf_api_token
+    environment:
+      - CLOUDFLARE_DNS_API_TOKEN_FILE=/run/secrets/cf_api_token
+    networks:
+      - public
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.role==manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.dashboard-http.entrypoints=web"
+        - "traefik.http.routers.dashboard-http.rule=Host(`traefik.felipemalacarne.com.br`)"
+        - "traefik.http.routers.dashboard-http.middlewares=redirect-to-https"
+        - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+        - "traefik.http.routers.dashboard-https.entrypoints=websecure"
+        - "traefik.http.routers.dashboard-https.rule=Host(`traefik.felipemalacarne.com.br`)"
+        - "traefik.http.routers.dashboard-https.service=api@internal"
+        - "traefik.http.routers.dashboard-https.tls=true"
+        - "traefik.http.routers.dashboard-https.tls.certresolver=cloudflare"
+        - "traefik.http.routers.dashboard-https.middlewares=auth"
+        - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$QBkVQuGb$$mk8AS5oRQ8ABi0PJ/edWV."
+        - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
+
+networks:
+  public:
+    external: true
+
+secrets:
+  cf_api_token:
+    external: true
+
+volumes:
+  traefik_certs:

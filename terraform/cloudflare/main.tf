@@ -88,3 +88,13 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "vaultwarden_tunnel_c
     ]
   }
 }
+
+resource "cloudflare_dns_record" "traefik_dns_record" {
+  zone_id = var.zone_id
+  name    = "*.${var.zone}"
+  content = var.traefik_host
+  type    = "A"
+  ttl = 1
+  proxied = false
+  comment = "[terraform] Zamorak Traefik DNS record"
+}

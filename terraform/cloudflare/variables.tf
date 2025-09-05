@@ -18,3 +18,8 @@ variable "zone" {
   description = "Domain used to expose the zamorak VM instance to the Internet"
   type        = string
 }
+
+variable "traefik_host" {
+  description = "Host to point traefik DNS to"
+  type = string
+}
