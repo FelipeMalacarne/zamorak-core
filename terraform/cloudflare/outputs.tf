@@ -18,3 +18,9 @@ output "tunnel_domain" {
   description = "The full domain for the tunnel"
   value = "${cloudflare_dns_record.portainer_dns_record.name}.${var.zone}"
 }
+
+output "vw_tunnel_token" {
+  description = "The token for the Vaultwarden Cloudflare Tunnel"
+  value       = data.cloudflare_zero_trust_tunnel_cloudflared_token.vaultwarden_tunnel_token.token
+  sensitive   = true
+}
