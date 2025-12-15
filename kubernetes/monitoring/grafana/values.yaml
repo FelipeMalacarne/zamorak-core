@@ -1,0 +1,25 @@
+adminUser: admin
+adminPassword: admin123   # TEMPORARY – we’ll secure this next
+
+persistence:
+  enabled: true
+  storageClassName: local-path
+  size: 5Gi
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 300m
+    memory: 256Mi
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://kube-prometheus-stack-prometheus.monitoring:9090
+        access: proxy
+        isDefault: true
