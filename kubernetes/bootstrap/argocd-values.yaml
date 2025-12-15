@@ -1,0 +1,28 @@
+global:
+  domain: argocd.felipemalacarne.com.br
+
+configs:
+  params:
+    server.insecure: true   # Traefik will terminate TLS
+
+server:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 300m
+      memory: 512Mi
+
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    hosts:
+      - argocd.felipemalacarne.com.br
+    tls:
+      - hosts:
+          - argocd.felipemalacarne.com.br
+        secretName: argocd-tls
