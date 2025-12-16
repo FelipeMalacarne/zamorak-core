@@ -1,0 +1,48 @@
+loki:
+  auth_enabled: false
+
+  commonConfig:
+    replication_factor: 1
+
+  storage:
+    type: filesystem
+
+  schemaConfig:
+    configs:
+      - from: 2023-01-01
+        store: boltdb-shipper
+        object_store: filesystem
+        schema: v11
+        index:
+          prefix: loki_index_
+          period: 24h
+
+  storageConfig:
+    boltdb_shipper:
+      active_index_directory: /var/loki/index
+      cache_location: /var/loki/cache
+      shared_store: filesystem
+    filesystem:
+      directory: /var/loki/chunks
+
+  limits_config:
+    retention_period: 168h # 7 days
+
+singleBinary:
+  replicas: 1
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+persistence:
+  enabled: true
+  storageClassName: local-path
+  size: 10Gi
+
+service:
+  type: ClusterIP
