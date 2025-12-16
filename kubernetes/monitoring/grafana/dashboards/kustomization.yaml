@@ -5,7 +5,7 @@ namespace: monitoring
 configMapGenerator:
   - name: grafana-dashboards-kubernetes
     files:
-      - cluster.json=cluster.json
+      - cluster.json=kubernetes/cluster.json
     options:
       labels:
         grafana_dashboard: "1"
