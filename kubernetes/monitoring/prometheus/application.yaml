@@ -6,13 +6,17 @@ metadata:
 spec:
   project: default
 
-  source:
-    repoURL: https://prometheus-community.github.io/helm-charts
-    chart: kube-prometheus-stack
-    targetRevision: 56.6.0
-    helm:
-      valueFiles:
-        - values.yaml
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: 56.6.0
+      helm:
+        releaseName: monitoring-prometheus
+        valueFiles:
+          - $values/kubernetes/monitoring/prometheus/values.yaml
+    - repoURL: git@github.com:FelipeMalacarne/zamorak-core.git
+      targetRevision: HEAD
+      ref: values
 
   destination:
     server: https://kubernetes.default.svc
