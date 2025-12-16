@@ -6,14 +6,18 @@ metadata:
 spec:
   project: default
 
-  source:
-    repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
-    chart: opentelemetry-collector
-    targetRevision: 0.82.0
-    helm:
-      releaseName: otel-collector
-      valueFiles:
-        - $values/kubernetes/monitoring/otel-collector/values.yaml
+  sources:
+    - repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+      chart: opentelemetry-collector
+      targetRevision: 0.82.0
+      helm:
+        releaseName: otel-collector
+        valueFiles:
+          - $values/kubernetes/monitoring/otel-collector/values.yaml
+
+    - repoURL: git@github.com:FelipeMalacarne/zamorak-core.git
+      targetRevision: HEAD
+      ref: values
 
   destination:
     server: https://kubernetes.default.svc
