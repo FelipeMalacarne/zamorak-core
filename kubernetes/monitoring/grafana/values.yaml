@@ -49,21 +49,3 @@ sidecar:
     enabled: true
     label: grafana_dashboard
     labelValue: "1"
-    folder: /var/lib/grafana/dashboards
-
-dashboards:
-  kubernetes:
-    cluster:
-      file: dashboards/kubernetes/cluster.json
-    nodes:
-      file: dashboards/kubernetes/nodes.json
-    pods:
-      file: dashboards/kubernetes/pods.json
-
-  system:
-    node-exporter:
-      file: dashboards/system/node-exporter.json
-
-dashboardsConfigMaps:
-  kubernetes: grafana-dashboards-kubernetes
-  system: grafana-dashboards-system
