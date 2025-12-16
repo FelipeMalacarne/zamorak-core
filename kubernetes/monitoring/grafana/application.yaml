@@ -17,6 +17,7 @@ spec:
     - repoURL: git@github.com:FelipeMalacarne/zamorak-core.git
       targetRevision: HEAD
       ref: values
+      path: kubernetes/monitoring/grafana/dashboards
 
   destination:
     server: https://kubernetes.default.svc

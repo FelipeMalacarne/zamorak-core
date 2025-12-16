@@ -1,6 +1,3 @@
-adminUser: admin
-adminPassword: admin123   # TEMPORARY – we’ll secure this next
-
 admin:
   existingSecret: grafana-admin
   userKey: admin-user
@@ -47,21 +44,11 @@ datasources:
         access: proxy
         isDefault: true
 
-dashboards:
-  kubernetes:
-    cluster:
-      file: dashboards/kubernetes/cluster.json
-    nodes:
-      file: dashboards/kubernetes/nodes.json
-    pods:
-      file: dashboards/kubernetes/pods.json
-
-  system:
-    node-exporter:
-      file: dashboards/system/node-exporter.json
+sidecar:
+  dashboards:
+    enabled: true
+    label: grafana_dashboard
+    labelValue: "1"
 
 dashboardsConfigMaps:
-  kubernetes:
-    grafana_folder: Kubernetes
-  system:
-    grafana_folder: System
+  default: grafana-dashboards-kubernetes
