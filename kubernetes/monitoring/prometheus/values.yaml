@@ -2,8 +2,16 @@ prometheus:
   prometheusSpec:
     retention: 5d
 
-    serviceMonitorSelectorNilUsesHelmValues: false
-    podMonitorSelectorNilUsesHelmValues: false
+    # Restrict Prometheus to ServiceMonitors/PodMonitors from this release to avoid
+    # duplicate kubelet scrapes from stray or legacy monitors.
+    serviceMonitorSelectorNilUsesHelmValues: true
+    podMonitorSelectorNilUsesHelmValues: true
+    serviceMonitorSelector:
+      matchLabels:
+        release: prometheus
+    podMonitorSelector:
+      matchLabels:
+        release: prometheus
 
     storageSpec:
       volumeClaimTemplate:
