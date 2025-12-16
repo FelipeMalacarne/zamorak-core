@@ -7,16 +7,17 @@ spec:
   project: default
 
   sources:
-    - repoURL: https://grafana.github.io/helm-charts
-      chart: grafana
-      targetRevision: 7.3.0
-      helm:
-        releaseName: grafana
-        valueFiles:
-          - $values/kubernetes/monitoring/grafana/values.yaml
-    - repoURL: git@github.com:FelipeMalacarne/zamorak-core.git
-      targetRevision: HEAD
-      ref: values
+  - repoURL: https://grafana.github.io/helm-charts
+    chart: grafana
+    targetRevision: 7.3.0
+    helm:
+      releaseName: grafana
+      valueFiles:
+        - $values/kubernetes/monitoring/grafana/values.yaml
+
+  - repoURL: git@github.com:FelipeMalacarne/zamorak-core.git
+    targetRevision: HEAD
+    ref: values
 
   destination:
     server: https://kubernetes.default.svc
