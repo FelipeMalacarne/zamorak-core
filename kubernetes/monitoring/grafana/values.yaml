@@ -43,12 +43,3 @@ datasources:
         url: http://prometheus-kube-prometheus-prometheus.monitoring:9090
         access: proxy
         isDefault: true
-
-sidecar:
-  dashboards:
-    enabled: true
-    label: grafana_dashboard
-    labelValue: "1"
-
-dashboardsConfigMaps:
-  default: grafana-dashboards-kubernetes
