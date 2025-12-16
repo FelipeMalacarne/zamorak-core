@@ -2,7 +2,10 @@ mode: daemonset
 
 image:
   repository: otel/opentelemetry-collector-contrib
-  tag: 0.82.0
+  # tag: 0.82.0
+
+command:
+  name: otelcol-contrib
 
 resources:
   requests:
@@ -12,12 +15,32 @@ resources:
     cpu: 300m
     memory: 256Mi
 
+extraVolumes:
+  - name: varlogpods
+    hostPath:
+      path: /var/log/pods
+
+extraVolumeMounts:
+  - name: varlogpods
+    mountPath: /var/log/pods
+    readOnly: true
+
+clusterRole:
+  create: true
+  rules:
+    - apiGroups: [""]
+      resources: ["pods", "namespaces", "nodes"]
+      verbs: ["get", "list", "watch"]
+
 config:
   receivers:
+    jaeger: null
+    prometheus: null
+    zipkin: null
     otlp:
       protocols:
-        grpc:
-        http:
+        grpc: {}
+        http: {}
 
     filelog:
       include:
@@ -25,13 +48,17 @@ config:
       exclude:
         - /var/log/pods/*/otel-collector/*.log
       start_at: beginning
-      include_file_path: true
       operators:
-        - type: cri
+        # CRI log parser compatible with 0.82.0
+        - type: regex_parser
+          regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<log>.*)$'
+          timestamp:
+            parse_from: attributes.time
+            layout_type: gotime
+            layout: '2006-01-02T15:04:05.999999999Z07:00'
 
   processors:
-    batch:
-
+    memory_limiter: null
     k8sattributes:
       auth_type: serviceAccount
       passthrough: false
@@ -43,28 +70,21 @@ config:
           - k8s.node.name
           - k8s.pod.uid
 
+    batch: {}
+
   exporters:
+    debug: null
+    logging: null
     loki:
-      endpoint: http://loki.monitoring:3100/otlp
+      endpoint: http://loki.monitoring:3100/loki/api/v1/push
       tls:
         insecure: true
 
-    logging:
-      loglevel: info
-
   service:
     pipelines:
+      traces: null
+      metrics: null
       logs:
         receivers: [filelog, otlp]
         processors: [k8sattributes, batch]
-        exporters: [loki, logging]
-
-extraVolumes:
-  - name: varlogpods
-    hostPath:
-      path: /var/log/pods
-
-extraVolumeMounts:
-  - name: varlogpods
-    mountPath: /var/log/pods
-    readOnly: true
+        exporters: [loki]
