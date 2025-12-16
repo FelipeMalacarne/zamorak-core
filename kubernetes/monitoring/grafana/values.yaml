@@ -49,8 +49,3 @@ sidecar:
     enabled: true
     label: grafana_dashboard
     labelValue: "1"
-
-dashboards:
-  default:
-    test:
-      file: dashboards/test.json
