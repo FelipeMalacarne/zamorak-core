@@ -2,7 +2,7 @@ mode: daemonset
 
 image:
   repository: otel/opentelemetry-collector-contrib
-  # tag: 0.82.0
+  tag: 0.95.0
 
 command:
   name: otelcol-contrib
@@ -19,11 +19,51 @@ extraVolumes:
   - name: varlogpods
     hostPath:
       path: /var/log/pods
+  - name: varlibdocker
+    hostPath:
+      path: /var/lib/docker/containers
+      type: DirectoryOrCreate
+  - name: varlibcontainerd
+    hostPath:
+      path: /var/lib/containerd/io.containerd.runtime.v2.task/k8s.io
+      type: DirectoryOrCreate
+  - name: varlibotelcol
+    hostPath:
+      path: /var/lib/otelcol
+      type: DirectoryOrCreate
 
 extraVolumeMounts:
   - name: varlogpods
     mountPath: /var/log/pods
     readOnly: true
+  - name: varlibdocker
+    mountPath: /var/lib/docker/containers
+    readOnly: true
+  - name: varlibcontainerd
+    mountPath: /var/lib/containerd/io.containerd.runtime.v2.task/k8s.io
+    readOnly: true
+  - name: varlibotelcol
+    mountPath: /var/lib/otelcol
+
+ports:
+  otlp:
+    enabled: true
+    containerPort: 4317
+    servicePort: 4317
+    hostPort: null
+  otlp-http:
+    enabled: true
+    containerPort: 4318
+    servicePort: 4318
+    hostPort: null
+  jaeger-compact:
+    enabled: false
+  jaeger-thrift:
+    enabled: false
+  jaeger-grpc:
+    enabled: false
+  zipkin:
+    enabled: false
 
 clusterRole:
   create: true
@@ -47,7 +87,8 @@ config:
         - /var/log/pods/*/*/*.log
       exclude:
         - /var/log/pods/*/otel-collector/*.log
-      start_at: beginning
+      start_at: end
+      storage: file_storage
       operators:
         # CRI log parser compatible with 0.82.0
         - type: regex_parser
@@ -57,8 +98,13 @@ config:
             layout_type: gotime
             layout: '2006-01-02T15:04:05.999999999Z07:00'
 
+  extensions:
+    health_check:
+      endpoint: ${env:MY_POD_IP}:13133
+    file_storage:
+      directory: /var/lib/otelcol
+
   processors:
-    memory_limiter: null
     k8sattributes:
       auth_type: serviceAccount
       passthrough: false
@@ -86,5 +132,6 @@ config:
       metrics: null
       logs:
         receivers: [filelog, otlp]
-        processors: [k8sattributes, batch]
+        processors: [memory_limiter, k8sattributes, batch]
         exporters: [loki]
+    extensions: [health_check, file_storage]

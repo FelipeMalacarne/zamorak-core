@@ -14,7 +14,7 @@ spec:
         valueFiles:
           - $values/kubernetes/monitoring/prometheus/values.yaml
     - repoURL: git@github.com:FelipeMalacarne/zamorak-core.git
-      targetRevision: HEAD
+      targetRevision: main
       ref: values
 
   destination:
