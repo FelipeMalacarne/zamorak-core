@@ -14,14 +14,10 @@ spec:
         releaseName: grafana
         valueFiles:
           - $values/kubernetes/monitoring/grafana/values.yaml
-
     - repoURL: git@github.com:FelipeMalacarne/zamorak-core.git
       targetRevision: HEAD
       ref: values
 
-    - repoURL: git@github.com:FelipeMalacarne/zamorak-core.git
-      targetRevision: HEAD
-      path: kubernetes/monitoring/grafana/dashboards
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
