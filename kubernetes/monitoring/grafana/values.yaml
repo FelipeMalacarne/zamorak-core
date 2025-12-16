@@ -43,6 +43,12 @@ datasources:
         url: http://prometheus-kube-prometheus-prometheus.monitoring:9090
         access: proxy
         isDefault: true
+      - name: Loki
+        type: loki
+        url: http://loki.monitoring:3100
+        access: proxy
+        jsonData:
+          maxLines: 1000
 
 sidecar:
   dashboards:
