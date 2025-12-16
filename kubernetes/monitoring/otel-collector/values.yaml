@@ -26,10 +26,8 @@ config:
         - /var/log/pods/*/otel-collector/*.log
       start_at: beginning
       include_file_path: true
-      include_file_name: false
       operators:
-        - type: container
-          format: auto
+        - type: cri
 
   processors:
     batch:
@@ -51,25 +49,22 @@ config:
       tls:
         insecure: true
 
+    logging:
+      loglevel: info
+
   service:
     pipelines:
       logs:
         receivers: [filelog, otlp]
         processors: [k8sattributes, batch]
-        exporters: [loki]
+        exporters: [loki, logging]
 
 extraVolumes:
   - name: varlogpods
     hostPath:
       path: /var/log/pods
-  - name: varlibdockercontainers
-    hostPath:
-      path: /var/lib/docker/containers
 
 extraVolumeMounts:
   - name: varlogpods
     mountPath: /var/log/pods
-    readOnly: true
-  - name: varlibdockercontainers
-    mountPath: /var/lib/docker/containers
     readOnly: true
