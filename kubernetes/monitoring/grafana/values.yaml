@@ -46,3 +46,22 @@ datasources:
         url: http://monitoring-prometheus-kube-prometheus.monitoring:9090
         access: proxy
         isDefault: true
+
+dashboards:
+  kubernetes:
+    cluster:
+      file: dashboards/kubernetes/cluster.json
+    nodes:
+      file: dashboards/kubernetes/nodes.json
+    pods:
+      file: dashboards/kubernetes/pods.json
+
+  system:
+    node-exporter:
+      file: dashboards/system/node-exporter.json
+
+dashboardsConfigMaps:
+  kubernetes:
+    grafana_folder: Kubernetes
+  system:
+    grafana_folder: System
