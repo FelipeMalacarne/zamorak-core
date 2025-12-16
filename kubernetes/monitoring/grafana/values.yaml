@@ -1,6 +1,11 @@
 adminUser: admin
 adminPassword: admin123   # TEMPORARY – we’ll secure this next
 
+admin:
+  existingSecret: grafana-admin
+  userKey: admin-user
+  passwordKey: admin-password
+
 persistence:
   enabled: true
   storageClassName: local-path
