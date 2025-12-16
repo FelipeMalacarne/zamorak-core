@@ -1,0 +1,48 @@
+mode: deployment
+
+replicaCount: 1
+
+image:
+  repository: otel/opentelemetry-collector-contrib
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 300m
+    memory: 256Mi
+
+service:
+  type: ClusterIP
+
+ports:
+  otlp:
+    enabled: true
+  otlp-http:
+    enabled: true
+
+config:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+        http:
+
+  processors:
+    batch:
+    memory_limiter:
+      check_interval: 1s
+      limit_mib: 200
+      spike_limit_mib: 50
+
+  exporters:
+    prometheus:
+      endpoint: "0.0.0.0:9464"
+
+  service:
+    pipelines:
+      metrics:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [prometheus]
