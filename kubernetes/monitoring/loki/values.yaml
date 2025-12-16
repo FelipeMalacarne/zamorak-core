@@ -1,3 +1,5 @@
+deploymentMode: SingleBinary
+
 loki:
   auth_enabled: false
 
@@ -26,10 +28,15 @@ loki:
       directory: /var/loki/chunks
 
   limits_config:
-    retention_period: 168h # 7 days
+    retention_period: 168h
 
 singleBinary:
   replicas: 1
+
+persistence:
+  enabled: true
+  storageClassName: local-path
+  size: 10Gi
 
 resources:
   requests:
@@ -38,11 +45,3 @@ resources:
   limits:
     cpu: 500m
     memory: 512Mi
-
-persistence:
-  enabled: true
-  storageClassName: local-path
-  size: 10Gi
-
-service:
-  type: ClusterIP
