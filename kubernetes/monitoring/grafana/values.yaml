@@ -50,13 +50,6 @@ sidecar:
     label: grafana_dashboard
     labelValue: "1"
     folder: /var/lib/grafana/dashboards
-    provider:
-      name: default
-      orgid: 1
-      folder: ""
-      type: file
-      disableDelete: false
-      allowUiUpdates: false
 
 dashboards:
   kubernetes:
@@ -72,7 +65,5 @@ dashboards:
       file: dashboards/system/node-exporter.json
 
 dashboardsConfigMaps:
-  kubernetes:
-    grafana_folder: Kubernetes
-  system:
-    grafana_folder: System
+  kubernetes: grafana-dashboards-kubernetes
+  system: grafana-dashboards-system
