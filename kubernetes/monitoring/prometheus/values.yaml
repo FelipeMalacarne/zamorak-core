@@ -2,6 +2,9 @@ prometheus:
   prometheusSpec:
     retention: 5d
 
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+
     storageSpec:
       volumeClaimTemplate:
         spec:
@@ -20,6 +23,9 @@ prometheus:
         cpu: 500m
         memory: 1Gi
 
+defaultRules:
+  create: true
+
 alertmanager:
   enabled: false
 
@@ -31,3 +37,4 @@ kubeStateMetrics:
 
 nodeExporter:
   enabled: true
+

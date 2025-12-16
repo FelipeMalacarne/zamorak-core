@@ -43,3 +43,36 @@ datasources:
         url: http://prometheus-kube-prometheus-prometheus.monitoring:9090
         access: proxy
         isDefault: true
+
+sidecar:
+  dashboards:
+    enabled: true
+    label: grafana_dashboard
+    labelValue: "1"
+    folder: /var/lib/grafana/dashboards
+    provider:
+      name: default
+      orgid: 1
+      folder: ""
+      type: file
+      disableDelete: false
+      allowUiUpdates: false
+
+dashboards:
+  kubernetes:
+    cluster:
+      file: dashboards/kubernetes/cluster.json
+    nodes:
+      file: dashboards/kubernetes/nodes.json
+    pods:
+      file: dashboards/kubernetes/pods.json
+
+  system:
+    node-exporter:
+      file: dashboards/system/node-exporter.json
+
+dashboardsConfigMaps:
+  kubernetes:
+    grafana_folder: Kubernetes
+  system:
+    grafana_folder: System
