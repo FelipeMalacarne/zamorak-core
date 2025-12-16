@@ -7,6 +7,11 @@ persistence:
   enabled: true
   storageClassName: local-path
   size: 5Gi
+  accessModes:
+    - ReadWriteOnce
+
+initChownData:
+  enabled: false
 
 resources:
   requests:
