@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: monitoring-grafana
+  name: grafana
   namespace: argocd
 spec:
   project: default
@@ -17,7 +17,6 @@ spec:
     - repoURL: git@github.com:FelipeMalacarne/zamorak-core.git
       targetRevision: HEAD
       ref: values
-      path: kubernetes/monitoring/grafana/dashboards
 
   destination:
     server: https://kubernetes.default.svc

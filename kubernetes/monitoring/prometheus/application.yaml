@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: monitoring-prometheus
+  name: prometheus
   namespace: argocd
 spec:
   project: default
@@ -11,7 +11,7 @@ spec:
       chart: kube-prometheus-stack
       targetRevision: 56.6.0
       helm:
-        releaseName: monitoring-prometheus
+        releaseName: prometheus
         valueFiles:
           - $values/kubernetes/monitoring/prometheus/values.yaml
     - repoURL: git@github.com:FelipeMalacarne/zamorak-core.git

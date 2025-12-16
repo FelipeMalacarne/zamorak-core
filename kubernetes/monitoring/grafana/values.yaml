@@ -40,7 +40,7 @@ datasources:
     datasources:
       - name: Prometheus
         type: prometheus
-        url: http://monitoring-prometheus-kube-prometheus.monitoring:9090
+        url: http://prometheus-kube-prometheus.monitoring:9090
         access: proxy
         isDefault: true
 
