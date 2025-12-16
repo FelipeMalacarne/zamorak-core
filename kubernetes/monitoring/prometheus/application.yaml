@@ -11,7 +11,6 @@ spec:
       chart: kube-prometheus-stack
       targetRevision: 56.6.0
       helm:
-        releaseName: prometheus
         valueFiles:
           - $values/kubernetes/monitoring/prometheus/values.yaml
     - repoURL: git@github.com:FelipeMalacarne/zamorak-core.git
