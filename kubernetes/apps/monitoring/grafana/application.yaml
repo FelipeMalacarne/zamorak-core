@@ -13,7 +13,7 @@ spec:
     helm:
       releaseName: grafana
       valueFiles:
-        - $values/kubernetes/monitoring/grafana/values.yaml
+        - $values/kubernetes/apps/monitoring/grafana/values.yaml
 
   - repoURL: git@github.com:FelipeMalacarne/zamorak-core.git
     targetRevision: main

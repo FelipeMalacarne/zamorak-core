@@ -1,20 +1,18 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: otel-collector
+  name: prometheus
   namespace: argocd
 spec:
   project: default
 
   sources:
-    - repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
-      chart: opentelemetry-collector
-      targetRevision: 0.82.0
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: 56.6.0
       helm:
-        releaseName: otel-collector
         valueFiles:
-          - $values/kubernetes/monitoring/otel-collector/values.yaml
-
+          - $values/kubernetes/apps/monitoring/prometheus/values.yaml
     - repoURL: git@github.com:FelipeMalacarne/zamorak-core.git
       targetRevision: main
       ref: values
@@ -29,3 +27,4 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - ServerSideApply=true
