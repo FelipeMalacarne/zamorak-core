@@ -1,0 +1,13 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  metadata:
+    name: core
+  source:
+    path: kubernetes
+    repoURL: https://github.com/FelipeMalacarne/zamorak-core
+    targetRevision: main
