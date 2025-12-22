@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: minecraft
+  labels:
+    release: prometheus
+    app.kubernetes.io/name: minecraft
+    app.kubernetes.io/instance: minecraft
+  namespace: minecraft
+spec:
+  namespaceSelector:
+    matchNames:
+      - minecraft
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: minecraft
+      expose: metrics
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s

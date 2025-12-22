@@ -1,21 +1,24 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: core
+  name: minecraft
   namespace: argocd
 spec:
   project: default
+
   source:
     repoURL: git@github.com:FelipeMalacarne/zamorak-core.git
     targetRevision: main
-    path: kubernetes/apps
-    directory:
-      recurse: true
-      include: "**/application.yaml"
+    path: kubernetes/apps/minecraft/manifests
+
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: minecraft
+
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

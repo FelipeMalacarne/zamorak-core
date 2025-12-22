@@ -1,0 +1,18 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: minecraft
+    app.kubernetes.io/instance: minecraft
+spec:
+  valuesContent: |
+    ports:
+      minecraft:
+        port: 25565
+        expose: true
+        exposedPort: 25565
+        protocol: TCP
+    additionalArguments:
+      - "--entryPoints.minecraft.transport.respondingTimeouts.readTimeout=0"

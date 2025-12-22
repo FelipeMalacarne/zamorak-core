@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minecraft-server-config
+  labels:
+    app.kubernetes.io/name: minecraft
+    app.kubernetes.io/instance: minecraft
+  namespace: minecraft
+data:
+  TYPE: "AUTO_CURSEFORGE"
+  CF_PAGE_URL: "https://www.curseforge.com/minecraft/modpacks/ftb-stoneblock-4/files/7341313"
+  EULA: "TRUE"
+  MEMORY: "6G"
+  VERSION: "1.20.1"
+  SEED: "7437135210536028694"
+  MOTD: "Show the bola"
+  ALLOW_FLIGHT: "TRUE"
+  CF_MODS: "ctm"
