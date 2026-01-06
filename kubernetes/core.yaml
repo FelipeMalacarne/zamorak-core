@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: core
   namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io  # Garante limpeza ao deletar
 spec:
   project: default
   source:
@@ -11,7 +13,7 @@ spec:
     path: kubernetes/apps
     directory:
       recurse: true
-      include: "**/application.yaml"
+      # include: "**/application.yaml"
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
