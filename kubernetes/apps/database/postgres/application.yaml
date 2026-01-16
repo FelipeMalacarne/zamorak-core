@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: postgres
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://charts.bitnami.com/bitnami
+      chart: postgresql
+      targetRevision: 18.2.0
+      helm:
+        values: |
+          auth:
+            existingSecret: "postgres-creds"
+            secretKeys:
+              adminPasswordKey: "postgres-password"
+    - repoURL: git@github.com:FelipeMalacarne/zamorak-core.git
+      targetRevision: main
+      path: kubernetes/apps/database/postgres/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: database
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

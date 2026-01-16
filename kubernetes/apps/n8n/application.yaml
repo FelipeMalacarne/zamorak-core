@@ -13,7 +13,7 @@ spec:
       recurse: true
   destination:
     server: https://kubernetes.default.svc
-    namespace: database
+    namespace: n8n
   syncPolicy:
     automated:
       prune: true
