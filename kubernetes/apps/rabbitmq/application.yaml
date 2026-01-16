@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rabbitmq-operator
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:FelipeMalacarne/zamorak-core.git
+    targetRevision: main
+    path: kubernetes/apps/rabbitmq/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rabbitmq-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
