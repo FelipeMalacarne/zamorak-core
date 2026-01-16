@@ -1,40 +1,23 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Application
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
 metadata:
   name: rabbitmq
-  namespace: argocd
+  namespace: database
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
-  project: default
-  source:
-    repoURL: https://charts.bitnami.com/bitnami
-    chart: rabbitmq
-    targetRevision: 16.0.4
-    helm:
-      values: |
-        image:
-          tag: 4.1.0-debian-12-r1
-        auth:
-          username: rabbitmq
-          existingPasswordSecret: rabbitmq-creds
-          existingPasswordSecretKey: rabbitmq-password
-          existingErlangSecret: rabbitmq-creds
-          existingErlangSecretKey: rabbitmq-erlang-cookie
-        persistence:
-          enabled: true
-          size: 8Gi
-        resources:
-          limits:
-            cpu: 500m
-            memory: 1024Mi
-          requests:
-            cpu: 100m
-            memory: 256Mi
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: database
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
+  replicas: 1
+  persistence:
+    storage: 8Gi
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1024Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  rabbitmq:
+    additionalPlugins:
+      - rabbitmq_management
+      - rabbitmq_peer_discovery_k8s
