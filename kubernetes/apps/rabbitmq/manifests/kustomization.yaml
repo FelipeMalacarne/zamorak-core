@@ -3,3 +3,5 @@ kind: Kustomization
 resources:
   - https://github.com/rabbitmq/cluster-operator/releases/download/v2.19.0/cluster-operator.yml
   - cluster.yaml
+patchesStrategicMerge:
+  - operator.yaml
