@@ -74,7 +74,7 @@ spec:
               value: America/Sao_Paulo
           resources:
             requests:
-              cpu: 1000m
+              cpu: 100m
               memory: 512Mi
             limits:
               cpu: 500m
