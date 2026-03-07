@@ -11,7 +11,7 @@ Migrating services from Oracle VM (`zamorak`, Docker Swarm) to an Intel N97 home
 - `saradomin` — N97 home server (new, this plan)
 
 **Goal:** GitOps home server using k3s + ArgoCD, mirroring zamorak patterns, with
-home-specific services (Jellyfin, Pi-hole, Vaultwarden) and Longhorn storage with GCS backup.
+home-specific services (Jellyfin, Pi-hole, Vaultwarden) and Longhorn storage with Cloudflare R2 backup.
 
 ---
 
@@ -26,7 +26,7 @@ saradomin (N97, k3s single-node)
 ├── Jellyfin (Tailscale + Cloudflare, Intel QuickSync)
 ├── Vaultwarden (Cloudflare public + PostgreSQL backend)
 ├── PostgreSQL (shared cluster DB)
-├── Longhorn (storage + GCS backup)
+├── Longhorn (storage + R2 backup)
 └── Prometheus + Grafana (Tailscale-only)
 ```
 
@@ -48,7 +48,7 @@ saradomin (N97, k3s single-node)
 ```
 saradomin/
 ├── terraform/
-│   ├── main.tf              # GCS backend + cloudflare module call
+│   ├── main.tf              # R2 backend + cloudflare module call
 │   ├── variables.tf
 │   ├── terraform.tfvars     # (gitignored — real values)
 │   └── cloudflare/
@@ -69,7 +69,7 @@ saradomin/
 │       │   ├── pihole/              # Pi-hole + NodePort 53 + Tailscale svc
 │       │   └── cloudflared/         # Cloudflare tunnel deployment
 │       ├── data/
-│       │   ├── longhorn/            # Longhorn + GCS BackupTarget
+│       │   ├── longhorn/            # Longhorn + R2 BackupTarget
 │       │   └── postgres/            # PostgreSQL shared DB
 │       ├── media/
 │       │   └── jellyfin/            # Jellyfin + HostPath + Intel GPU
@@ -241,7 +241,66 @@ spec:
       selfHeal: true
 ```
 
-cert-manager must also be installed (same pattern as zamorak) with Cloudflare DNS-01 issuer.
+cert-manager is installed as a dependency before Traefik (it issues the TLS certs Traefik serves).
+
+`kubernetes/apps/networking/cert-manager/application.yaml`:
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.jetstack.io
+    chart: cert-manager
+    targetRevision: "v1.x"
+    helm:
+      values: |
+        installCRDs: true
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: networking
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+```
+
+`kubernetes/apps/networking/cert-manager/cluster-issuer.yaml`:
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: felipe@felipemalacarne.com.br
+    privateKeySecretRef:
+      name: letsencrypt-account-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+```
+
+Create the Cloudflare API token secret (needs `Zone:DNS:Edit` permission):
+```bash
+kubectl create secret generic cloudflare-api-token \
+  --namespace networking \
+  --from-literal=api-token=<cloudflare-dns-edit-token>
+```
 
 ### Step 5: Tailscale Operator (ArgoCD)
 
@@ -322,7 +381,7 @@ kubectl create secret generic longhorn-r2-secret \
 > R2 access keys are created in the Cloudflare dashboard under **R2 → Manage R2 API Tokens**.
 > Set `AWS_CERT=""` so Longhorn does not try to verify a custom CA.
 
-RecurringJob (daily snapshot → GCS):
+RecurringJob (daily snapshot → R2):
 ```yaml
 apiVersion: longhorn.io/v1beta2
 kind: RecurringJob
@@ -358,6 +417,11 @@ spec:
       labels:
         app: pihole
     spec:
+      # hostNetwork exposes port 53 directly on the node IP — required because
+      # DNS clients always dial port 53; NodePort (30000+) range won't work here.
+      # systemd-resolved must be disabled or moved off port 53 first (see note below).
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: pihole
           image: pihole/pihole:latest
@@ -384,28 +448,6 @@ spec:
           persistentVolumeClaim:
             claimName: pihole-pvc
 ---
-# service-dns.yaml (NodePort for DNS — Pi-hole needs port 53 on a stable IP)
-apiVersion: v1
-kind: Service
-metadata:
-  name: pihole-dns
-  namespace: networking
-spec:
-  type: NodePort
-  selector:
-    app: pihole
-  ports:
-    - name: dns-udp
-      port: 53
-      targetPort: 53
-      protocol: UDP
-      nodePort: 30053
-    - name: dns-tcp
-      port: 53
-      targetPort: 53
-      protocol: TCP
-      nodePort: 30053
----
 # service-admin.yaml (Tailscale-only admin UI)
 apiVersion: v1
 kind: Service
@@ -425,7 +467,18 @@ spec:
       targetPort: 80
 ```
 
-After deploy: Set Pi-hole's IP as custom DNS in Tailscale admin → all Tailscale devices get ad blocking.
+> **systemd-resolved conflict:** Ubuntu/Debian hosts run `systemd-resolved` on port 53.
+> Disable the stub listener before deploying Pi-hole:
+> ```bash
+> # On saradomin host:
+> sudo sed -i 's/#DNSStubListener=yes/DNSStubListener=no/' /etc/systemd/resolved.conf
+> sudo systemctl restart systemd-resolved
+> sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+> ```
+
+The Tailscale service exposes Pi-hole's web UI (port 80) only — DNS goes via hostNetwork above.
+After deploy: set the saradomin Tailscale IP as the custom DNS server in the Tailscale admin panel
+→ all Tailscale devices get ad blocking.
 
 ### Step 8: Cloudflared
 
@@ -558,13 +611,14 @@ spec:
         - name: vaultwarden
           image: vaultwarden/server:latest
           env:
+            # DATABASE_URL must be a single secret — k8s does not interpolate $(VAR)
+            # inside value: fields across different env entries. Store the full URL
+            # in a secret and reference it directly.
             - name: DATABASE_URL
-              value: "postgresql://vaultwarden:$(DB_PASSWORD)@postgres.data.svc.cluster.local/vaultwarden"
-            - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: vaultwarden-secret
-                  key: db_password
+                  key: database_url   # value: postgresql://vaultwarden:<pass>@postgres.data.svc.cluster.local/vaultwarden
             - name: DOMAIN
               value: "https://vault.felipemalacarne.com.br"
             - name: SIGNUPS_ALLOWED
@@ -651,14 +705,27 @@ spec:
             path: /data/media   # large library, not in Longhorn
             type: Directory
 ---
-# Dual exposure: Tailscale + Cloudflare
+# ClusterIP — used by Traefik ingress (Cloudflare path)
+apiVersion: v1
+kind: Service
+metadata:
+  name: jellyfin
+  namespace: media
+spec:
+  type: ClusterIP
+  selector:
+    app: jellyfin
+  ports:
+    - port: 8096
+      targetPort: 8096
+---
+# Tailscale LoadBalancer — direct private access from any Tailscale device
 apiVersion: v1
 kind: Service
 metadata:
   name: jellyfin-tailscale
   namespace: media
   annotations:
-    tailscale.com/expose: "true"
     tailscale.com/hostname: "jellyfin"
 spec:
   type: LoadBalancer
@@ -667,8 +734,9 @@ spec:
     app: jellyfin
   ports:
     - port: 8096
+      targetPort: 8096
 ---
-# Ingress for Cloudflare tunnel path
+# Ingress for Cloudflare tunnel path — points to ClusterIP, not Tailscale LB
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -686,7 +754,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: jellyfin-tailscale
+                name: jellyfin
                 port:
                   number: 8096
 ```
@@ -920,6 +988,94 @@ terraform output -raw tunnel_token | kubectl create secret generic cloudflared-t
 
 ---
 
+## App-of-Apps (ArgoCD Root Application)
+
+After bootstrapping ArgoCD manually, a single root Application manages all others via GitOps.
+This avoids manually applying each Application YAML.
+
+`kubernetes/bootstrap/root-app.yaml`:
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/felipemalacarne/saradomin.git
+    targetRevision: HEAD
+    path: kubernetes/apps
+    directory:
+      recurse: true
+      include: "*/*/application.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+```
+
+Apply once after ArgoCD bootstrap:
+```bash
+kubectl apply -f kubernetes/bootstrap/root-app.yaml
+```
+
+From then on, adding a new `application.yaml` anywhere under `kubernetes/apps/` is enough —
+ArgoCD picks it up automatically on the next sync.
+
+---
+
+## Intel GPU Device Plugin (GitOps)
+
+Rather than `kubectl apply -f <url>`, manage the Intel GPU operator as an ArgoCD Application.
+
+`kubernetes/apps/media/intel-gpu-plugin/application.yaml`:
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: intel-gpu-plugin
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://intel.github.io/helm-charts
+    chart: intel-device-plugins-operator
+    targetRevision: "0.x"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: media
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+```
+
+After the operator is running, create the `GpuDevicePlugin` CR:
+```yaml
+apiVersion: deviceplugin.intel.com/v1
+kind: GpuDevicePlugin
+metadata:
+  name: gpudeviceplugin-sample
+  namespace: media
+spec:
+  image: intel/intel-gpu-plugin:latest
+  sharedDevNum: 1
+```
+
+Verify the plugin is advertising the GPU to k8s:
+```bash
+kubectl get nodes -o json | jq '.items[].status.allocatable | with_entries(select(.key | startswith("gpu.intel")))'
+# Should show: "gpu.intel.com/i915": "1"
+```
+
+---
+
 ## Secrets Strategy
 
 **Never commit raw secrets.** Two options:
@@ -947,6 +1103,33 @@ helm install sealed-secrets sealed-secrets/sealed-secrets --namespace kube-syste
 kubeseal --fetch-cert > pub-cert.pem
 kubectl create secret generic my-secret --dry-run=client -o yaml | \
   kubeseal --cert pub-cert.pem -o yaml > my-sealed-secret.yaml
+```
+
+---
+
+## Repo Housekeeping
+
+`.gitignore`:
+```
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/terraform.tfvars
+terraform/**/.terraform.lock.hcl
+
+# Secrets (never commit unencrypted)
+**/secrets.yaml
+**/*.dec.yaml
+.env
+```
+
+`terraform/terraform.tfvars.example`:
+```hcl
+cloudflare_api_token  = "your-cloudflare-api-token"
+cloudflare_account_id = "your-account-id"
+cloudflare_zone_id    = "your-zone-id"
+cloudflare_zone       = "felipemalacarne.com.br"
 ```
 
 ---
@@ -991,37 +1174,44 @@ metadata:
 ## Deployment Order (Checklist)
 
 ### Phase 1 — Base
+- [ ] Disable `systemd-resolved` stub listener on saradomin host (see Pi-hole note)
 - [ ] `mkdir -p /data/media /data/k3s-storage` on saradomin host
 - [ ] Install k3s with `--disable traefik --disable servicelb`
 - [ ] Copy kubeconfig to zaros, update server address to Tailscale IP
-- [ ] `tailscale up --advertise-routes=10.42.0.0/16,10.43.0.0/16 --accept-dns=false` on saradomin
-- [ ] Approve routes in Tailscale admin
+- [ ] Install Tailscale on host: `tailscale up --advertise-routes=10.42.0.0/16,10.43.0.0/16 --accept-dns=false`
+- [ ] Approve routes in Tailscale admin panel
 - [ ] `helm install argocd` with `kubernetes/bootstrap/argocd-values.yaml`
+- [ ] `kubectl apply -f kubernetes/bootstrap/root-app.yaml` — from here ArgoCD manages everything
 
 ### Phase 2 — Networking
 - [ ] Apply `kubernetes/base/namespaces.yaml`
-- [ ] ArgoCD: deploy cert-manager (Cloudflare DNS-01 ClusterIssuer)
+- [ ] Create `cloudflare-api-token` secret in `networking` namespace (DNS-01 solver)
+- [ ] ArgoCD: deploy cert-manager → apply `cluster-issuer.yaml` after CRDs are ready
 - [ ] ArgoCD: deploy Traefik
-- [ ] ArgoCD: deploy Tailscale operator (create OAuth secret first)
+- [ ] Create Tailscale OAuth secret in `tailscale` namespace
+- [ ] ArgoCD: deploy Tailscale operator
 - [ ] Create R2 API token in Cloudflare dashboard (R2 → Manage R2 API Tokens)
 - [ ] `kubectl create secret generic longhorn-r2-secret ...` in `longhorn-system`
-- [ ] ArgoCD: deploy Longhorn
-- [ ] ArgoCD: deploy Pi-hole; configure Tailscale DNS in admin panel
-- [ ] `terraform apply` in `terraform/` → creates tunnels + DNS
-- [ ] Store tunnel token as `cloudflared-token` Secret
+- [ ] ArgoCD: deploy Longhorn; verify backup target shows green in Longhorn UI
+- [ ] Create `pihole-secret` in `networking` namespace
+- [ ] ArgoCD: deploy Pi-hole; set saradomin Tailscale IP as DNS in Tailscale admin panel
+- [ ] `terraform apply` → creates R2 buckets, tunnels, DNS records
+- [ ] `terraform output -raw tunnel_token | kubectl create secret generic cloudflared-token ...`
 - [ ] ArgoCD: deploy cloudflared
 
 ### Phase 3 — Services
 - [ ] ArgoCD: deploy PostgreSQL
-- [ ] Create `vaultwarden` DB and user in PostgreSQL
+- [ ] Exec into postgres pod and create `vaultwarden` DB + user
+- [ ] Create `vaultwarden-secret` with full `database_url` value
 - [ ] ArgoCD: deploy Vaultwarden; verify `vault.felipemalacarne.com.br` loads
-- [ ] Confirm `/data/media` exists and has content on host
-- [ ] ArgoCD: deploy Intel GPU device plugin
-- [ ] ArgoCD: deploy Jellyfin; verify QuickSync with `ffmpeg -init_hw_device qsv=hw ...`
+- [ ] Confirm `/data/media` is populated on host
+- [ ] ArgoCD: deploy intel-gpu-plugin; verify `gpu.intel.com/i915: "1"` in node allocatable
+- [ ] ArgoCD: deploy Jellyfin; verify QuickSync: `ffmpeg -init_hw_device qsv=hw ...`
 
 ### Phase 4 — Observability
 - [ ] ArgoCD: deploy kube-prometheus-stack
 - [ ] Verify Grafana accessible via Tailscale hostname `grafana`
+- [ ] Import or build a k3s/node dashboard in Grafana
 
 ---
 
@@ -1034,8 +1224,8 @@ metadata:
 - [ ] `jellyfin.felipemalacarne.com.br` loads media library
 - [ ] Jellyfin hardware transcode confirmed (`ffmpeg` uses `h264_qsv`)
 - [ ] Jellyfin accessible via Tailscale IP directly
-- [ ] Longhorn UI shows backup target connected to GCS
-- [ ] Trigger manual Longhorn snapshot on PostgreSQL PVC, confirm in GCS bucket
+- [ ] Longhorn UI shows backup target connected to R2 (`saradomin-longhorn` bucket)
+- [ ] Trigger manual Longhorn snapshot on PostgreSQL PVC, confirm object appears in R2 bucket
 - [ ] Grafana shows k3s node metrics
 
 ---
@@ -1045,7 +1235,7 @@ metadata:
 | Decision | Choice | Reason |
 |----------|--------|--------|
 | Traefik install | ArgoCD Helm (k3s built-in disabled) | Full GitOps control |
-| Storage | Longhorn | Snapshots + GCS backup built-in |
+| Storage | Longhorn | Snapshots + R2 backup (S3-compatible) |
 | Media storage | HostPath `/data/media` | Too large for Longhorn/bucket |
 | Tailscale | k8s operator (per-service) | Granular access control |
 | Vaultwarden DB | PostgreSQL (shared cluster) | Consistent, reusable |
