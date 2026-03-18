@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: docling
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:FelipeMalacarne/zamorak-core.git
+    targetRevision: main
+    path: kubernetes/apps/docling/manifests
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: docling
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
