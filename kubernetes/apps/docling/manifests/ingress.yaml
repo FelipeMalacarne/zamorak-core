@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: docling
+  namespace: docling
+  labels:
+    app: docling
+    app.kubernetes.io/name: docling
+    app.kubernetes.io/part-of: docling
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - docling.felipemalacarne.com.br
+      secretName: docling-tls
+  rules:
+    - host: docling.felipemalacarne.com.br
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: docling
+                port:
+                  number: 80
